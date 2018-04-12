@@ -38,10 +38,10 @@ def introduction():
 #window		optional	Change the date range of the request if the section is top. Accepted values are day | week | month | year | all. Defaults to day
 def gallery_search():
     global newpath
-    section = raw_input("Section? (hot, top) ")
-    sort = raw_input("Sort Method? (viral, top, time, rising) ")
-    window = raw_input("Timeframe? (day, week, month, year, all) ")
-    page = raw_input("Page Number? ")
+    section = raw_input("Section (hot, top, user): ")
+    sort = raw_input("Sort Method (viral, top, time, rising): ")
+    window = raw_input("Timeframe (day, week, month, year, all): ")
+    page = raw_input("Page Number: ")
     s = 'https://api.imgur.com/3/gallery/'
     s += section
     s += '/'
@@ -61,10 +61,10 @@ def gallery_search():
 #window		optional	Change the date range of the request if the sort is "top". Options are day | week | month | year | all. Defaults to week
 def subreddit_search():
     global newpath
-    subreddit = raw_input("Subreddit Name? ")
-    sort = raw_input("Sort Method? (top, time) ")
-    window = raw_input("Timeframe? ONLY APPLIES IF SORT WAS TOP (day, week, month, year, all) ")
-    page = raw_input("Page Number? ")
+    subreddit = raw_input("Subreddit Name: ")
+    sort = raw_input("Sort Method (top, time): ")
+    window = raw_input("Timeframe ONLY APPLIES IF SORT WAS TOP (day, week, month, year, all): ")
+    page = raw_input("Page Number: ")
     s = 'https://api.imgur.com/3/gallery/r/'
     s += subreddit
     s += '/'
