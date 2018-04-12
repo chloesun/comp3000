@@ -128,10 +128,9 @@ while True:
 		#stores the data in FILES_METADATA
         FILES_METADATA = RESPONSE.json()['data']
 
-		#depending on the search type, parses the data differently
-        if search == 1:
-            FILES = reduce(normalize_metadata_entry, get_files(), {})
-        else:
+		#Data can be retrieved in slightly different ways. This accounts for it
+        FILES = reduce(normalize_metadata_entry, get_files(), {})
+        if not FILES:
             FILES = reduce(normalize_metadata_entry_subreddit, FILES_METADATA, {})
 
         break
