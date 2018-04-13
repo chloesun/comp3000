@@ -1,7 +1,7 @@
 # COMP 3000 Team Project
 Create a filesystem for imgur with FUSE
 
-## install libaries
+## install libraries
 ```
 sudo apt-get install libfuse-dev
 sudo apt-get install python-dev
