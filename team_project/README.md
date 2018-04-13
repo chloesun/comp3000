@@ -1,7 +1,11 @@
 # COMP 3000 Team Project
-Create a filesystem for imgur with FUSE
+Developed a virtual file system to mount the filtered images from imgur to a local mount point, so we can read and interact with them.
 
-## install libraries
+## Features
+### Gallery search
+### Subreddit galleries search
+
+## Install
 ```
 sudo apt-get install libfuse-dev
 sudo apt-get install python-dev
