@@ -1,9 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 from urlparse import urlparse
+from subprocess import call
 import requests
-import os, stat, errno
-# Based on example in python-fuse at https://github.com/libfuse/python-fuse
-# pull in some spaghetti to make this stuff work without fuse-py being installed
+
+import sys, os, stat, errno
+# Base on example in python-fuse at https://github.com/libfuse/python-fuse
+# pull in some spaghetti to make this stuff work without fuse-py being installed 
+
 try:
     import _find_fuse_parts
 except ImportError:
@@ -19,45 +22,131 @@ if not hasattr(fuse, '__version__'):
 # api version of python-fuse
 fuse.fuse_python_api = (0, 2)
 
-# imgur api crendentials
-CLIENT_ID = 'cd89bf737db7404'
-CLIENT_SECRET = 'a68d534095f8ec6f3e880a5baa71b00d2f14b03a'
+#prints the introduction when the program is called
+def introduction():
+    print("WELCOME TO IMGUR AS A FILE SYSTEM")
+    print("=================================")
+    print('Your file system is mounted at: ', sys.argv[1])
+    print("The input method goes as follows:")
+    print("	You will be prompted for filters to search through imgur.")
+    print("	The prompts will tell you specifically what the proper inputs are. The program will not work if given incorrect input.")
+    print("	The photos that have been requested will appear in your mounted folder.")
+    print("	To view a new set of photos, run the program again.")
+    print("	Thanks :)\n")
 
-# GET Gallery see https://apidocs.imgur.com/#eff60e84-5781-4c12-926a-208dc4c7cc94
-RESPONSE = requests.get(
-    'https://api.imgur.com/3/gallery/hot/rising/day/1?showViral=true&mature=false&album_previews=false',
-    headers = {'Authorization': 'Client-ID ' + CLIENT_ID}
-)
+#searches galleries through user entered filters
+#Key		Required	Value
+#section	optional	hot | top | user. Defaults to hot
+#sort		optional	viral | top | time | rising (only available with user section). Defaults to viral
+#page		optional	integer - the data paging number
+#window		optional	Change the date range of the request if the section is top. Accepted values are day | week | month | year | all. Defaults to day
+def gallery_search():
+    global newpath
+    section = raw_input("Section (hot, top, user): ")
+    sort = raw_input("Sort Method (viral, top, time, rising): ")
+    window = raw_input("Timeframe (day, week, month, year, all): ")
+    page = raw_input("Page Number: ")
+    s = 'https://api.imgur.com/3/gallery/'
+    s += section
+    s += '/'
+    s += sort
+    s += '/'
+    s += window
+    s += '/'
+    s += page
+    s += '?showViral=true&mature=false&album_previews=false'
+    return s
 
-# stop if we have an error
-assert RESPONSE.status_code == 200
+#searches subreddits through user entered filters
+#Key		Required	Value
+#subreddit	required	pics - A valid subreddit name
+#sort		optional	time | top - defaults to time
+#page		optional	integer - the data paging number
+#window		optional	Change the date range of the request if the sort is "top". Options are day | week | month | year | all. Defaults to week
+def subreddit_search():
+    global newpath
+    subreddit = raw_input("Subreddit Name: ")
+    sort = raw_input("Sort Method (top, time): ")
+    window = raw_input("Timeframe ONLY APPLIES IF SORT WAS TOP (day, week, month, year, all): ")
+    page = raw_input("Page Number: ")
+    s = 'https://api.imgur.com/3/gallery/r/'
+    s += subreddit
+    s += '/'
+    s += sort
+    s += '/'
+    s += window
+    s += '/'
+    s += page
+    return s
 
-# extract file's data from json response
-FILES_METADATA = RESPONSE.json()['data']
-
-# split the path and take last item from the path (the filename)
-# ex: http://blah.com/blah/blah/image.jpg becomes image.jpg
+#uses the link as the filename
 def link_to_filename(link):
     return os.path.split(urlparse(link).path)[-1]
 
-# add a file to a dictionary key is filename, value is dictionary containing size and bytes of the file
-# and the link(url) to the file
+#uses the data (f) to create a structure (acc) just consisting of the size and link for each file
+#this only applies to gallery search
+
 def normalize_metadata_entry(acc, f):
     if 'size' in f and 'link' in f:
         acc[link_to_filename(f['link'])] = {'size': f['size'], 'link': f['link']}
     return acc
 
-# Extract image file data (unnormalized) from FILES_METADATA dictionary (a complicated structure)
-# filter out items that are not images and not ending in .png
+#uses the data (f) to create a structure (acc) just consisting of the size and link for each file
+#this only applies to subreddit search
+def normalize_metadata_entry_subreddit(acc, f):
+    #print '=' * 1000, json.dumps(f)
+    if 'link' in f:
+        acc[link_to_filename(f['link'])] = {'size': f['size'], 'link': f['link']}
+    return acc
+
+#get the image files from the FILES_METADATA
+#this only applies to gallery search
 def get_files():
-    return [f['images'][0] for f in FILES_METADATA if 'images' in f and f['images'][0]['link'].endswith('.png')]
+    return [f['images'][0] for f in FILES_METADATA if 'images' in f and (f['images'][0]['link'].endswith('.png') or f['images'][0]['link'].endswith('.jpg'))]
 
-# Reduce into our dictionary all metadata into a structure that contains only what we need
-# Complex structure turns into a dictionary with this form:
-# {"<filename>": {"size": <number of bytes>, "link": "<url fo file>"}, ...}
-FILES = reduce(normalize_metadata_entry, get_files(), {})
+#the introduction to the imgur fuse program
+introduction()
 
-# default stats for fuse (constructor)
+#loop until valid user input and response from server
+while True:
+    try:
+        search = input("For gallery search, input '1'. For Subreddit search, input '2': ")
+
+        REQUESTSTRING = ""
+		
+		#search value of 1 is for a gallery search
+        if search == 1:
+            REQUESTSTRING = gallery_search()
+		#if not searching for a glallery, search for subreddit
+        else:
+            REQUESTSTRING = subreddit_search()
+
+		#the client ID for the search
+        CLIENT_ID = 'cd89bf737db7404'
+        CLIENT_SECRET = 'a68d534095f8ec6f3e880a5baa71b00d2f14b03a'
+        print(REQUESTSTRING)
+		#Retrieves the response from the search request
+        RESPONSE = requests.get(REQUESTSTRING, headers={'Authorization': 'Client-ID ' + CLIENT_ID})
+        print(RESPONSE.status_code)
+		#checks if the status code is equal to 200
+        assert RESPONSE.status_code == 200
+		#stores the data in FILES_METADATA
+        FILES_METADATA = RESPONSE.json()['data']
+
+		#Data can be retrieved in slightly different ways. This accounts for it
+        FILES = reduce(normalize_metadata_entry, get_files(), {})
+        if not FILES:
+            FILES = reduce(normalize_metadata_entry_subreddit, FILES_METADATA, {})
+
+        break
+    except:
+        print("There was a problem with the requested search")
+
+#if the requested mount folder is already mounted, unmounts it
+call(["sudo","umount",sys.argv[1]])
+
+#From https://github.com/libfuse/python-fuse adapted for imgur
+
 class imgur_Stat(fuse.Stat):
     def __init__(self):
         self.st_mode = 0
@@ -73,7 +162,6 @@ class imgur_Stat(fuse.Stat):
 
 # implements the file system
 class imgur_FS(Fuse):
-
     def getattr(self, path):
         st = imgur_Stat()
         if path == '/':
@@ -126,8 +214,6 @@ class imgur_FS(Fuse):
         return data
 
 
-
-
 def main():
 
     usage="""
@@ -137,9 +223,10 @@ Userspace imgur_fs.py example
     server = imgur_FS(version="%prog " + fuse.__version__,
                      usage=usage,
                      dash_s_do='setsingle')
-
     server.parse(errex=1)
     server.main()
 
+
 if __name__ == '__main__':
     main()
+
