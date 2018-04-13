@@ -2,8 +2,8 @@
 Developed a virtual file system to mount the filtered images from imgur to a local mount point, so we can read and interact with them.
 
 ## Features
-### Gallery search
-### Subreddit galleries search
+#### Gallery search based on the prompted options
+#### Subreddit galleries search based on the prompted options
 
 ## Install
 ```
@@ -13,7 +13,8 @@ git clone https://github.com/libfuse/python-fuse.git
 cd python-fuse
 sudo python setup.py install
 cd ..
-./imgur_fs.py /home/users/Documents/imgur
+chmod +x imgur_fs.py
+./imgur_fs.py /home/user/Documents/imgur
 ```
 
 (to mount the fs to this path, create the imgur folder first)
